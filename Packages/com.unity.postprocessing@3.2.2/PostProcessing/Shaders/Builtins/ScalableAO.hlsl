@@ -105,7 +105,7 @@ float CheckBounds(float2 uv, float d)
 float SampleDepth(float2 uv)
 {
     float d = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, UnityStereoTransformScreenSpaceTex(uv), 0));
-    return d /* _ProjectionParams.z*/ + CheckBounds(uv, d);
+    return d * _ProjectionParams.z + CheckBounds(uv, d);
 }
 
 float3 SampleNormal(float2 uv)
@@ -223,7 +223,7 @@ float4x4 unity_CameraInvProjection;
 float3 GetViewSpacePosition(int2 screenSpacePos)
 {
     float2 uv = screenSpacePos / _ScreenParams.xy;
-    float depth = SampleDepth(uv);
+    float depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, UnityStereoTransformScreenSpaceTex(uv), 0));
     // from screen space back to clip space
     float2 clipSpacePos = uv * 2.0 - 1.0;
 
@@ -286,9 +286,10 @@ float sampleAO(uint2 screenSpacePos, float3 originPos, float3 normal, float ssDi
 }
 
 
-float4 FragAO(VaryingsDefault varyings) : SV_Target
+float4 FragAO(VaryingsDefault i) : SV_Target
 {
-    uint2 screenSpacePos = (uint2)varyings.vertex.xy;
+/*
+    uint2 screenSpacePos = (uint2)i.vertex.xy;
 
     float3 originPos = GetViewSpacePosition(screenSpacePos);
     float3 normal = GetViewSpaceNormal(screenSpacePos);
@@ -298,9 +299,9 @@ float4 FragAO(VaryingsDefault varyings) : SV_Target
     float ssDiskRadius = -gProjScale * gRadius / originPos.z;
 
     float ao = 0.0;
-    for (int i = 0; i < gNumSamples; i++)
+    for (int s = 0; s < gNumSamples; s++)
     {
-        ao += sampleAO(screenSpacePos, originPos, normal, ssDiskRadius, i, randomPatternRotationAngle);
+        ao += sampleAO(screenSpacePos, originPos, normal, ssDiskRadius, s, randomPatternRotationAngle);
     }
 
     float temp = gRadius2 * gRadius;
@@ -308,71 +309,69 @@ float4 FragAO(VaryingsDefault varyings) : SV_Target
 
     float A = max(0.0, 1.0 - ao * gIntensity * (5.0 / gNumSamples));
     return PackAONormal(A, normal);
+/*/
+    float2 uv = i.texcoord;
+
+    // Parameters used in coordinate conversion
+    float3x3 proj = (float3x3)unity_CameraProjection;
+    float2 p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
+    float2 p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
+
+    // View space normal and depth
+    float3 norm_o;
+    float depth_o = SampleDepthNormal(uv, norm_o);
+
+    // Reconstruct the view-space position.
+    float3 vpos_o = ReconstructViewPos(uv, depth_o, p11_22, p13_31);
+
+    float ao = 0.0;
+
+    for (int s = 0; s < int(SAMPLE_COUNT); s++)
+    {
+        // Sample point
+#if defined(SHADER_API_D3D11)
+        // This 'floor(1.0001 * s)' operation is needed to avoid a NVidia shader issue. This issue
+        // is only observed on DX11.
+        float3 v_s1 = PickSamplePoint(uv, floor(1.0001 * s));
+#else
+        float3 v_s1 = PickSamplePoint(uv, s);
+#endif
+
+        v_s1 = faceforward(v_s1, -norm_o, v_s1);
+        float3 vpos_s1 = vpos_o + v_s1;
+
+        // Reproject the sample point
+        float3 spos_s1 = mul(proj, vpos_s1);
+        float2 uv_s1_01 = (spos_s1.xy / CheckPerspective(vpos_s1.z) + 1.0) * 0.5;
+
+        // Depth at the sample point
+        float depth_s1 = SampleDepth(uv_s1_01);
+
+        // Relative position of the sample point
+        float3 vpos_s2 = ReconstructViewPos(uv_s1_01, depth_s1, p11_22, p13_31);
+        float3 v_s2 = vpos_s2 - vpos_o;
+
+        // Estimate the obscurance value
+        float a1 = max(dot(v_s2, norm_o) - kBeta * depth_o, 0.0);
+        float a2 = dot(v_s2, v_s2) + EPSILON;
+        ao += a1 / a2;
+    }
+
+    ao *= RADIUS; // Intensity normalization
+
+    // Apply other parameters.
+    ao = PositivePow(ao * INTENSITY / SAMPLE_COUNT, kContrast);
+
+    // Apply fog when enabled (forward-only)
+#if (APPLY_FORWARD_FOG)
+    float d = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, i.texcoordStereo));
+    d = ComputeFogDistance(d);
+    ao *= ComputeFog(d);
+#endif
+
+    return PackAONormal(ao, norm_o);
+/**/
 }
-
-// float4 FragAO(VaryingsDefault i) : SV_Target
-// {
-//     float2 uv = i.texcoord;
-
-//     // Parameters used in coordinate conversion
-//     float3x3 proj = (float3x3)unity_CameraProjection;
-//     float2 p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
-//     float2 p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
-
-//     // View space normal and depth
-//     float3 norm_o;
-//     float depth_o = SampleDepthNormal(uv, norm_o);
-
-//     // Reconstruct the view-space position.
-//     float3 vpos_o = ReconstructViewPos(uv, depth_o, p11_22, p13_31);
-
-//     float ao = 0.0;
-
-//     for (int s = 0; s < int(SAMPLE_COUNT); s++)
-//     {
-//         // Sample point
-// #if defined(SHADER_API_D3D11)
-//         // This 'floor(1.0001 * s)' operation is needed to avoid a NVidia shader issue. This issue
-//         // is only observed on DX11.
-//         float3 v_s1 = PickSamplePoint(uv, floor(1.0001 * s));
-// #else
-//         float3 v_s1 = PickSamplePoint(uv, s);
-// #endif
-
-//         v_s1 = faceforward(v_s1, -norm_o, v_s1);
-//         float3 vpos_s1 = vpos_o + v_s1;
-
-//         // Reproject the sample point
-//         float3 spos_s1 = mul(proj, vpos_s1);
-//         float2 uv_s1_01 = (spos_s1.xy / CheckPerspective(vpos_s1.z) + 1.0) * 0.5;
-
-//         // Depth at the sample point
-//         float depth_s1 = SampleDepth(uv_s1_01);
-
-//         // Relative position of the sample point
-//         float3 vpos_s2 = ReconstructViewPos(uv_s1_01, depth_s1, p11_22, p13_31);
-//         float3 v_s2 = vpos_s2 - vpos_o;
-
-//         // Estimate the obscurance value
-//         float a1 = max(dot(v_s2, norm_o) - kBeta * depth_o, 0.0);
-//         float a2 = dot(v_s2, v_s2) + EPSILON;
-//         ao += a1 / a2;
-//     }
-
-//     ao *= RADIUS; // Intensity normalization
-
-//     // Apply other parameters.
-//     ao = PositivePow(ao * INTENSITY / SAMPLE_COUNT, kContrast);
-
-//     // Apply fog when enabled (forward-only)
-// #if (APPLY_FORWARD_FOG)
-//     float d = Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, i.texcoordStereo));
-//     d = ComputeFogDistance(d);
-//     ao *= ComputeFog(d);
-// #endif
-
-//     return PackAONormal(ao, norm_o);
-// }
 
 // Geometry-aware separable bilateral filter
 float4 FragBlur(VaryingsDefault i) : SV_Target
