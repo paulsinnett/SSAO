@@ -224,6 +224,7 @@ float3 GetViewSpacePosition(int2 screenSpacePos)
 {
     float2 uv = screenSpacePos / _ScreenParams.xy;
     float depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, UnityStereoTransformScreenSpaceTex(uv), 0));
+    depth += CheckBounds(uv, depth);
     // from screen space back to clip space
     float2 clipSpacePos = uv * 2.0 - 1.0;
 
@@ -288,7 +289,7 @@ float sampleAO(uint2 screenSpacePos, float3 originPos, float3 normal, float ssDi
 
 float4 FragAO(VaryingsDefault i) : SV_Target
 {
-/*
+//*
     uint2 screenSpacePos = (uint2)i.vertex.xy;
 
     float3 originPos = GetViewSpacePosition(screenSpacePos);
