@@ -11,7 +11,7 @@ public class SmoothedSlab : MonoBehaviour
 
     void Start()
     {
-        float h = 0.1f;
+        float h = 0.5f;
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[]
         {

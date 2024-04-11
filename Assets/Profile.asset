@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-4589367281847603848
+--- !u!114 &-960561915160467672
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -21,11 +21,14 @@ MonoBehaviour:
     value: 0
   intensity:
     overrideState: 1
-    value: 1
+    value: 4
   color:
     overrideState: 0
     value: {r: 0, g: 0, b: 0, a: 1}
   ambientOnly:
+    overrideState: 0
+    value: 0
+  seCode:
     overrideState: 1
     value: 0
   noiseFilterTolerance:
@@ -38,14 +41,14 @@ MonoBehaviour:
     overrideState: 0
     value: -12
   thicknessModifier:
-    overrideState: 1
+    overrideState: 0
     value: 1
   directLightingStrength:
     overrideState: 0
     value: 0
   radius:
     overrideState: 1
-    value: 0.2
+    value: 0.06
   quality:
     overrideState: 1
     value: 4
@@ -62,4 +65,4 @@ MonoBehaviour:
   m_Name: Profile
   m_EditorClassIdentifier: 
   settings:
-  - {fileID: -4589367281847603848}
+  - {fileID: -960561915160467672}

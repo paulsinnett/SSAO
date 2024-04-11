@@ -86,6 +86,11 @@ namespace UnityEngine.Rendering.PostProcessing
             sheet.ClearKeywords();
             sheet.properties.SetVector(ShaderIDs.AOParams, new Vector4(px, py, pz, pw));
             sheet.properties.SetVector(ShaderIDs.AOColor, Color.white - m_Settings.color.value);
+            sheet.properties.SetMatrix(ShaderIDs.InverseViewMatrix, context.camera.worldToCameraMatrix.inverse);
+            if (m_Settings.seCode.value)
+            {
+                sheet.EnableKeyword("USE_SE_CODE");
+            }
 
             // In forward fog is applied at the object level in the grometry pass so we need to
             // apply it to AO as well or it'll drawn on top of the fog effect.

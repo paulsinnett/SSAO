@@ -35,7 +35,7 @@ Shader "Hidden/PostProcessing/Debug/Overlays"
 
         // -----------------------------------------------------------------------------
         // Normals
-
+        float4x4 _CameraToWorld;
         float4 FragNormals(VaryingsDefault i) : SV_Target
         {
         #if SOURCE_GBUFFER
@@ -45,6 +45,9 @@ Shader "Hidden/PostProcessing/Debug/Overlays"
             float4 cdn = SAMPLE_TEXTURE2D(_CameraDepthNormalsTexture, sampler_CameraDepthNormalsTexture, i.texcoordStereo);
             float3 n = DecodeViewNormalStereo(cdn) * float3(1.0, 1.0, -1.0);
         #endif
+
+            n = mul((float3x3)_CameraToWorld, n);
+            n *= float3(1, 1, -1);
 
         #if UNITY_COLORSPACE_GAMMA
             n = LinearToSRGB(n);

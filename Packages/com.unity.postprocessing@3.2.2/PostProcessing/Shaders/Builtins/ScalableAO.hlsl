@@ -187,14 +187,145 @@ float3 PickSamplePoint(float2 uv, float index)
     return v * l;
 }
 
+float3 ReconstructViewPosFromScreenSpacePosition(int2 ssP)
+{
+    float2 uv = ssP / _ScreenParams.xy;
+    // Parameters used in coordinate conversion
+    float3x3 proj = (float3x3)unity_CameraProjection;
+    float2 p11_22 = float2(unity_CameraProjection._11, unity_CameraProjection._22);
+    float2 p13_31 = float2(unity_CameraProjection._13, unity_CameraProjection._23);
+    float depth = SampleDepth(uv);
+
+    // Reconstruct the view-space position.
+    return ReconstructViewPos(uv, depth, p11_22, p13_31);
+}
+
+float3 GetViewSpaceNormalFromScreenSpacePosition(uint2 ssP)
+{
+    return SampleNormal(UnityStereoTransformScreenSpaceTex(ssP / _ScreenParams.xy));
+}
+
 //
 // Distance-based AO estimator based on Morgan 2011
 // "Alchemy screen-space ambient obscurance algorithm"
 // http://graphics.cs.williams.edu/papers/AlchemyHPG11/
 //
+static const float gNumSamples = 11.0;
+static const float gRadius = 0.2;
+static const float gRadius2 = gRadius * gRadius;
+static const float gProjScale = 500.0;
+static const float gNumSpiralTurns = 7;
+static const float gBias = 0.01;
+static const float gIntensity = 1.0;
+
+
+// cbuffer SSAOCBuffer : register(CBUFFER_REGISTER_PIXEL)
+// {
+//     float4x4 gViewProjMatrix;
+//     float4x4 gProjMatrix;
+//     float4x4 gViewMatrix;
+//     float2 gScreenSize;
+// };
+
+// Texture2D gPositionTexture : register(TEXTURE_REGISTER_POSITION);
+// Texture2D gNormalTexture : register(TEXTURE_REGISTER_NORMAL);
+// SamplerState gPointSampler : register(SAMPLER_REGISTER_POINT);
+
+float3 reconstructNormal(float3 positionWorldSpace)
+{
+    return normalize(cross(ddx(positionWorldSpace), ddy(positionWorldSpace)));
+}
+
+/** Read the camera - space position of the point at screen - space pixel ssP + unitOffset * ssR.Assumes length(unitOffset) == 1 */
+float3 getOffsetPosition(uint2 ssC, float2 unitOffset, float ssR) {
+    // Derivation:
+    //  mipLevel = floor(log(ssR / MAX_OFFSET));
+
+    // TODO: mip levels
+    int mipLevel = 0; //TODO: clamp((int)floor(log2(ssR)) - LOG_MAX_OFFSET, 0, MAX_MIP_LEVEL);
+
+    int2 ssP = int2(ssR*unitOffset) + ssC;
+
+    float3 P = ReconstructViewPosFromScreenSpacePosition(ssP);
+    
+    // float3 P = gPositionTexture[ssP].xyz;
+
+    // P = mul(gViewMatrix, float4(P, 1.0)).xyz;
+
+    return P;
+}
+
+
+float2 tapLocation(int sampleNumber, float spinAngle, out float ssR)
+{
+    // Radius relative to ssR
+    float alpha = float(sampleNumber + 0.5) * (1.0 / gNumSamples);
+    float angle = alpha * (gNumSpiralTurns * 6.28) + spinAngle;
+
+    ssR = alpha;
+    return float2(cos(angle), sin(angle));
+}
+
+float sampleAO(uint2 screenSpacePos, float3 originPos, float3 normal, float ssDiskRadius, int tapIndex, float randomPatternRotationAngle)
+{
+    float ssR;
+    float2 unitOffset = tapLocation(tapIndex, randomPatternRotationAngle, ssR);
+    ssR *= ssDiskRadius;
+
+    // The occluding point in camera space
+    float3 Q = getOffsetPosition(screenSpacePos, unitOffset, ssR);
+
+    float3 v = Q - originPos;
+
+    float vv = dot(v, v);
+    float vn = dot(v, normal);
+
+    const float epsilon = 0.01;
+    float f = max(gRadius2 - vv, 0.0); 
+    
+    return f * f * f * max((vn - gBias) / (epsilon + vv), 0.0);
+}
+
+float4 ps_mainPorted(uint2 screenSpacePos : SV_Position, float3 normal) : SV_Target0
+{
+    // float3 originPos = gPositionTexture[screenSpacePos].xyz;
+    // originPos = mul(gViewMatrix, float4(originPos, 1.0)).xyz;
+    float3 originPos = ReconstructViewPosFromScreenSpacePosition(screenSpacePos);
+    // float3 normal = gNormalTexture[screenSpacePos].xyz;//reconstructNormal(originPos);
+    // normal = mul(gViewMatrix, float4(normal, 0.0)).xyz;
+
+    // Hash function used in the HPG12 AlchemyAO paper
+    float randomPatternRotationAngle = (3 * screenSpacePos.x ^ screenSpacePos.y + screenSpacePos.x * screenSpacePos.y) * 10;
+    float ssDiskRadius = -gProjScale * gRadius / originPos.z;
+
+    float ao = 0.0;
+    for (int i = 0; i < gNumSamples; i++)
+    {
+        ao += sampleAO(screenSpacePos, originPos, normal, ssDiskRadius, i, randomPatternRotationAngle);
+    }
+
+    float temp = gRadius2 * gRadius;
+    ao /= temp * temp;
+
+    // Apply other parameters.
+    float A = max(0.0, 1.0 - ao * gIntensity * (5.0 / gNumSamples));
+
+    return A;
+}
+
 float4 FragAO(VaryingsDefault i) : SV_Target
 {
     float2 uv = i.texcoord;
+
+    float ao = 0.0;
+
+#if (USE_SE_CODE)
+
+    uint2 screenSpacePos = (uint2)(uv * _ScreenParams.xy);
+    float3 norm_o = GetViewSpaceNormalFromScreenSpacePosition(screenSpacePos);
+    ao = 1 - ps_mainPorted(screenSpacePos, norm_o).x;
+
+#else
 
     // Parameters used in coordinate conversion
     float3x3 proj = (float3x3)unity_CameraProjection;
@@ -207,8 +338,6 @@ float4 FragAO(VaryingsDefault i) : SV_Target
 
     // Reconstruct the view-space position.
     float3 vpos_o = ReconstructViewPos(uv, depth_o, p11_22, p13_31);
-
-    float ao = 0.0;
 
     for (int s = 0; s < int(SAMPLE_COUNT); s++)
     {
@@ -252,7 +381,7 @@ float4 FragAO(VaryingsDefault i) : SV_Target
     d = ComputeFogDistance(d);
     ao *= ComputeFog(d);
 #endif
-
+#endif
     return PackAONormal(ao, norm_o);
 }
 
