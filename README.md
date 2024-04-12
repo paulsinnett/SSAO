@@ -6,15 +6,15 @@ My answer to the original question "Is there anything obvious wrong with the nor
 
 ![Mac sees you](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW5uemM3ZXlpdTUwYWYyeTVqYWUzcW41YTZsNnA2NHZhbmJnZnNodSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/9Jp1WsDkwkLtcrHBT9/giphy-downsized-large.gif)
 
-The first clue is that the camera is tilted down which you can see from the horizon line in the screenshots. But in images with normals coloured, the floor plane is pure green. This implies that the normal colours are world space normals with green up, red to the right, and blue towards us. If the normals were in camera space, the floor would mix green and blue based on its relative angle to the camera.
+To begin, I wanted to emulate the normal colouring shown in the screenshots. At first I thought it matched the standard Unity normal colouring, but it doesn't. One difference, as evidenced by the cube at the back right of the screen is that blue represents normals pointing towards the camera. In Unity, this is represented as negative blue and hence clipped to 0. The other difference, as evidenced by the colouring of the floor, is that the normals are in world space. If it were in camera space, the floor would effectively be tipped towards the camera and hence mix green and blue.
 
-This project contains a modified post processing debug layer that displays the normals in world space for comparison purposes.
+This project contains a modified post processing debug layer that displays the normals in world space with blue towards us for comparison purposes.
 
-Included in this project is the scene `NormalTest`. This scene visualises normal directions by reading them from images wherever you hover the mouse.
+Included in this project is the scene `NormalTest`. This scene shows normal directions by reading them from the pixel under the mouse pointer and then projecting a line in the direction of the normal. This helps visualize the surfaces.
 
 ## The seat
 
-Focussing on the seat of the chair, broadly speaking it should be a flat surface pointing up and therefore should be a flat green colour. However, the normals have been smoothed. If I make a squashed cube and smooth the normals, this is the colouring I get:
+Focussing on the seat of the chair, broadly speaking it should be a flat surface pointing up and therefore should be a flat green colour. However, the normals have been smoothed. If I make a squashed cube and smooth the normals (the `SmoothedNormals` scene), this is the colouring I get:
 
 ![flattened and smoothed cube](https://github.com/paulsinnett/SSAO/assets/3679392/5f95d0dc-a723-4ae6-a412-d7155a059e78)
 
@@ -22,11 +22,11 @@ A smoothed and flattened cube: it is full green in the middle, tinting red to th
 
 ![seat without normal map](https://github.com/paulsinnett/SSAO/assets/3679392/024009f0-2952-4857-a494-c79ddb5c3b52)
 
-The seat of the chair without normal mapping is roughly the same. It is full green in the middle, tinting red to the right and blue to the front.
+The seat of the original chair without normal mapping is roughly the same. It is full green in the middle, tinting red to the right and blue to the front.
 
 ![normal mapped seat](https://github.com/paulsinnett/SSAO/assets/3679392/38f0d032-e29d-46b1-a5a4-1f319242363c)
 
-With normal mapping, in the middle it already appears tinted towards the blue. This doesn't appear correct.
+But with normal mapping, in the middle it already appears tinted towards the blue, and then it tints further from there. This doesn't appear correct.
 
 ![image](https://github.com/paulsinnett/SSAO/assets/3679392/8abbd68a-73e4-4e94-b319-2a9c4b289da6)
 
@@ -60,17 +60,18 @@ This is what we see in the unmapped version above.
 
 However, in the normal mapped version, this tilt appears to have gone.
 
-## Conclusion
+## Hypothesis
 
 This suggests to me that either the normal maps have been generated incorrectly, encoded incorrectly, decoded incorrectly, or applied incorrectly.
 
-## Testing the shader
+## Excluding the shader
 
-To eliminate the possibility of a shader issue I have taken the code provided and patched it into the Unity post process SSAO effect. It appears to work correctly without demonstrating the issues noted here. In this project I have included an chair and alien model from the asset store as test files. Both of these appear to render a decent looking SSAO effect with and without normal maps.
+To eliminate the possibility of a shader error I have taken the code provided and patched it into the Unity post process SSAO effect. It appears to work correctly without demonstrating the issues noted. In this project I have included a chair and an alien model from the asset store as test files. Both of these appear to render a decent looking SSAO effect both with and without normal maps. You can use the `SSAO` scene to test this.
 
 ![image](https://github.com/paulsinnett/SSAO/assets/3679392/cac4d104-4e0d-454c-a270-f269a0370653) ![image](https://github.com/paulsinnett/SSAO/assets/3679392/93563aca-5775-41f7-8407-491623a9b409)
 
 ![image](https://github.com/paulsinnett/SSAO/assets/3679392/d72d762d-48ce-41b5-98db-5f6823700926) ![image](https://github.com/paulsinnett/SSAO/assets/3679392/2314dd64-f9db-4bb4-a50a-50bfcb01d55a)
 
+## Conclusion
 
-
+I suspect the normal maps are the cause of the issue. I would recommend checking known good normal maps and models with the engine to see if the issue was in the creation or application of the normal maps.
