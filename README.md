@@ -6,7 +6,7 @@ My answer to the original question "Is there anything obvious wrong with the nor
 
 ![Mac sees you](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW5uemM3ZXlpdTUwYWYyeTVqYWUzcW41YTZsNnA2NHZhbmJnZnNodSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/9Jp1WsDkwkLtcrHBT9/giphy-downsized-large.gif)
 
-The first clue is that the camera is tilted down which you can see from the horizon line in the screenshots. But in images with normals coloured, the floor plain is pure green. This implies that the normal colours are world space normals with green up, red to the right, and blue towards us. If the normals were in camera space, the floor would mix green and blue based on its relative angle to the camera.
+The first clue is that the camera is tilted down which you can see from the horizon line in the screenshots. But in images with normals coloured, the floor plane is pure green. This implies that the normal colours are world space normals with green up, red to the right, and blue towards us. If the normals were in camera space, the floor would mix green and blue based on its relative angle to the camera.
 
 This project contains a modified post processing debug layer that displays the normals in world space for comparison purposes.
 
