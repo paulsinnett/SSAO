@@ -76,6 +76,16 @@ To eliminate the possibility of a shader error I have taken the code provided an
 
 There was some discussion in the original post about using a function to reconstruct the normals from 3D position of each pixel. I have included an additional option to apply this function. In this case, the normal map is not used but I managed to get reasonable results from this function too. However, I need to swap the parameters of the cross product or I got bad results like those shown in the original post.
 
+```hlsl
+float3 reconstructNormal(float3 positionWorldSpace)
+{
+    return normalize(cross(ddy(positionWorldSpace), ddx(positionWorldSpace)));
+}
+```
+
+![image](https://github.com/paulsinnett/SSAO/assets/3679392/71110cbb-30f1-4240-aa61-65f26ec67942) ![image](https://github.com/paulsinnett/SSAO/assets/3679392/83614a05-146b-4d8a-809f-8f17b2a6d088)
+
+
 ## Conclusion
 
 I suspect the normal maps are the cause of the issue. I would recommend checking known good normal maps and models with the engine to see if the issue was in the creation or application of the normal maps.
