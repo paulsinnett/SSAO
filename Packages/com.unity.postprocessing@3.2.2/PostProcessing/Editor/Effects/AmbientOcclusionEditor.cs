@@ -11,6 +11,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedParameterOverride m_Color;
         SerializedParameterOverride m_AmbientOnly;
         SerializedParameterOverride m_SECode;
+        SerializedParameterOverride m_ReconstructNormals;
         SerializedParameterOverride m_ThicknessModifier;
         SerializedParameterOverride m_DirectLightingStrength;
         SerializedParameterOverride m_Quality;
@@ -23,6 +24,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Color = FindParameterOverride(x => x.color);
             m_AmbientOnly = FindParameterOverride(x => x.ambientOnly);
             m_SECode = FindParameterOverride(x => x.seCode);
+            m_ReconstructNormals = FindParameterOverride(x => x.reconstructNormals);
             m_ThicknessModifier = FindParameterOverride(x => x.thicknessModifier);
             m_DirectLightingStrength = FindParameterOverride(x => x.directLightingStrength);
             m_Quality = FindParameterOverride(x => x.quality);
@@ -61,6 +63,7 @@ namespace UnityEditor.Rendering.PostProcessing
             PropertyField(m_Color);
             PropertyField(m_AmbientOnly);
             PropertyField(m_SECode);
+            PropertyField(m_ReconstructNormals);
 
             if (m_AmbientOnly.overrideState.boolValue && m_AmbientOnly.value.boolValue && !RuntimeUtilities.scriptableRenderPipelineActive)
                 EditorGUILayout.HelpBox("Ambient-only only works with cameras rendering in Deferred + HDR", MessageType.Info);

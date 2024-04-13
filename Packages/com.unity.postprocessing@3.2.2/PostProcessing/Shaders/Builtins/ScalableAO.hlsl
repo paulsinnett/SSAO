@@ -233,7 +233,7 @@ static const float gIntensity = 1.0;
 
 float3 reconstructNormal(float3 positionWorldSpace)
 {
-    return normalize(cross(ddx(positionWorldSpace), ddy(positionWorldSpace)));
+    return normalize(cross(ddy(positionWorldSpace), ddx(positionWorldSpace)));
 }
 
 /** Read the camera - space position of the point at screen - space pixel ssP + unitOffset * ssR.Assumes length(unitOffset) == 1 */
@@ -286,11 +286,17 @@ float sampleAO(uint2 screenSpacePos, float3 originPos, float3 normal, float ssDi
     return f * f * f * max((vn - gBias) / (epsilon + vv), 0.0);
 }
 
+float4x4 _CameraToWorld;
 float4 ps_mainPorted(uint2 screenSpacePos : SV_Position, float3 normal) : SV_Target0
 {
     // float3 originPos = gPositionTexture[screenSpacePos].xyz;
     // originPos = mul(gViewMatrix, float4(originPos, 1.0)).xyz;
     float3 originPos = ReconstructViewPosFromScreenSpacePosition(screenSpacePos);
+#if (RECONSTRUCT_NORMALS)
+    normal = reconstructNormal(originPos);
+    //normal = reconstructNormal(mul(_CameraToWorld, float4(originPos, 1)));
+    //normal = mul(unity_WorldToCamera, float4(normal, 0)).xyz;
+#endif
     // float3 normal = gNormalTexture[screenSpacePos].xyz;//reconstructNormal(originPos);
     // normal = mul(gViewMatrix, float4(normal, 0.0)).xyz;
 

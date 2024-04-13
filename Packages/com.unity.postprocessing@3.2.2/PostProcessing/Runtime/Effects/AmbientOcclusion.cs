@@ -106,6 +106,12 @@ namespace UnityEngine.Rendering.PostProcessing
         [Tooltip("Check this box to experiment with code from https://gamedev.stackexchange.com/questions/85894/unwanted-darkening-at-polygon-edges-when-using-normal-maps-with-ssao")]
         public BoolParameter seCode = new BoolParameter { value = true };
 
+        /// <summary>
+        /// Experiment with code from: https://gamedev.stackexchange.com/questions/85894/unwanted-darkening-at-polygon-edges-when-using-normal-maps-with-ssao
+        /// </summary>
+        [Tooltip("Check this box to experiment with code from https://gamedev.stackexchange.com/questions/85894/unwanted-darkening-at-polygon-edges-when-using-normal-maps-with-ssao")]
+        public BoolParameter reconstructNormals = new BoolParameter { value = true };
+
         // MSVO-only parameters
 
         /// <summary>

@@ -30,7 +30,10 @@ MonoBehaviour:
     value: 0
   seCode:
     overrideState: 1
-    value: 0
+    value: 1
+  reconstructNormals:
+    overrideState: 1
+    value: 1
   noiseFilterTolerance:
     overrideState: 0
     value: 0

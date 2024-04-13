@@ -19,6 +19,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
                 #pragma vertex VertDefault
                 #pragma fragment FragAO
                 #pragma multi_compile _ USE_SE_CODE
+                #pragma multi_compile _ RECONSTRUCT_NORMALS
                 #pragma multi_compile _ APPLY_FORWARD_FOG
                 #pragma multi_compile _ FOG_LINEAR FOG_EXP FOG_EXP2
                 #define SOURCE_DEPTH
@@ -35,6 +36,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
                 #pragma vertex VertDefault
                 #pragma fragment FragAO
                 #pragma multi_compile _ USE_SE_CODE
+                #pragma multi_compile _ RECONSTRUCT_NORMALS
                 #pragma multi_compile _ APPLY_FORWARD_FOG
                 #pragma multi_compile _ FOG_LINEAR FOG_EXP FOG_EXP2
                 #define SOURCE_GBUFFER

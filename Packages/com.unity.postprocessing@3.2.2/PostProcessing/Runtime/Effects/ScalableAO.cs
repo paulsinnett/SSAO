@@ -92,6 +92,11 @@ namespace UnityEngine.Rendering.PostProcessing
                 sheet.EnableKeyword("USE_SE_CODE");
             }
 
+            if (m_Settings.reconstructNormals.value)
+            {
+                sheet.EnableKeyword("RECONSTRUCT_NORMALS");
+            }
+
             // In forward fog is applied at the object level in the grometry pass so we need to
             // apply it to AO as well or it'll drawn on top of the fog effect.
             // Not needed in Deferred.
