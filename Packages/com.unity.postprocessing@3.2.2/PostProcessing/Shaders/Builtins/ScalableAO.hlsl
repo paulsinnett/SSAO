@@ -294,8 +294,6 @@ float4 ps_mainPorted(uint2 screenSpacePos : SV_Position, float3 normal) : SV_Tar
     float3 originPos = ReconstructViewPosFromScreenSpacePosition(screenSpacePos);
 #if (RECONSTRUCT_NORMALS)
     normal = reconstructNormal(originPos);
-    //normal = reconstructNormal(mul(_CameraToWorld, float4(originPos, 1)));
-    //normal = mul(unity_WorldToCamera, float4(normal, 0)).xyz;
 #endif
     // float3 normal = gNormalTexture[screenSpacePos].xyz;//reconstructNormal(originPos);
     // normal = mul(gViewMatrix, float4(normal, 0.0)).xyz;
