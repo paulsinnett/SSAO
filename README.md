@@ -72,6 +72,10 @@ To eliminate the possibility of a shader error I have taken the code provided an
 
 ![image](https://github.com/paulsinnett/SSAO/assets/3679392/d72d762d-48ce-41b5-98db-5f6823700926) ![image](https://github.com/paulsinnett/SSAO/assets/3679392/2314dd64-f9db-4bb4-a50a-50bfcb01d55a)
 
+## Reconstructing the normals
+
+There was some discussion in the original post about using a function to reconstruct the normals from 3D position of each pixel. I have included an additional option to apply this function. In this case, the normal map is not used but I managed to get reasonable results from this function too. However, I need to swap the parameters of the cross product or I got bad results like those shown in the original post.
+
 ## Conclusion
 
 I suspect the normal maps are the cause of the issue. I would recommend checking known good normal maps and models with the engine to see if the issue was in the creation or application of the normal maps.
